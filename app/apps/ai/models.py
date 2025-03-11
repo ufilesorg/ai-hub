@@ -1,10 +1,17 @@
 from fastapi_mongo_base.models import BaseEntity
 from pymongo import ASCENDING, TEXT, IndexModel
 
-from .schemas import AIModelSchema
+from .schemas import CategorySchema, ModelDetailSchema
 
 
-class AIModel(AIModelSchema, BaseEntity):
+class Category(CategorySchema, BaseEntity):
+    class Settings:
+        indexes = BaseEntity.Settings.indexes + [
+            IndexModel([("slug", ASCENDING)], unique=True),
+        ]
+
+
+class Model(ModelDetailSchema, BaseEntity):
 
     class Settings:
         indexes = BaseEntity.Settings.indexes + [
@@ -13,11 +20,10 @@ class AIModel(AIModelSchema, BaseEntity):
                 [
                     ("name", TEXT),
                     ("description", TEXT),
-                    ("name_fa", TEXT),
-                    ("description_fa", TEXT),
                     ("category", TEXT),
                     ("tags", TEXT),
                 ],  # Text index for search
                 name="text_search_index",
             ),
+            IndexModel([("source_url", ASCENDING)], unique=True),
         ]

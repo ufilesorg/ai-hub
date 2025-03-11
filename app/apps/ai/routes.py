@@ -1,16 +1,16 @@
 from fastapi_mongo_base.routes import AbstractBaseRouter
 
-from .models import AIModel
-from .schemas import AIModelSchema
+from .models import Model
+from .schemas import ModelSchema
 
 
-class AIModelRouter(AbstractBaseRouter):
+class ModelRouter(AbstractBaseRouter):
     def __init__(self):
         super().__init__(
-            model=AIModel,
-            schema=AIModelSchema,
+            model=Model,
+            schema=ModelSchema,
             user_dependency=None,
-            tags=["AIModel"],
+            tags=["Model"],
         )
 
     def config_routes(self, **kwargs):
@@ -21,5 +21,4 @@ class AIModelRouter(AbstractBaseRouter):
         )
 
 
-
-router = AIModelRouter().router
+router = ModelRouter().router

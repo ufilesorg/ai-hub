@@ -1,5 +1,5 @@
 services:
-  aimodels:
+  hub:
     build: app
     restart: unless-stopped
     command: python app.py

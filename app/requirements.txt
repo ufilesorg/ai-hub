@@ -23,3 +23,5 @@ pillow
 ufiles
 ufaas
 usso[fastapi]
+
+replicate

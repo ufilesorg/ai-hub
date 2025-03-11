@@ -1,7 +1,5 @@
 from enum import Enum
-from typing import Literal
 
-from fastapi_mongo_base.schemas import BaseEntitySchema
 from pydantic import BaseModel
 
 
@@ -12,6 +10,7 @@ class FieldType(str, Enum):
     password = "password"
     textarea = "textarea"
     select = "select"
+    multi_select = "multi_select"
     radio = "radio"
     checkbox = "checkbox"
     date = "date"
@@ -19,6 +18,8 @@ class FieldType(str, Enum):
     datetime = "datetime"
     file = "file"
     image = "image"
+    audio = "audio"
+    video = "video"
     color = "color"
     range = "range"
     url = "url"
@@ -31,11 +32,11 @@ class FieldSchema(BaseModel):
     label: str
     placeholder: str | None = None
     description: str | None = None
-    
+
     type: FieldType = FieldType.text
-    
+
     options: list[str] | None = None
     required: bool = False
     validation: str | None = None  # regex
-    
+
     value: str | None = None

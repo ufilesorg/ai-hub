@@ -1,23 +1,61 @@
+import asyncio
 import os
 
-from fastapi_mongo_base.utils.basic import retry_execution, try_except_wrapper
-from usso.session import AsyncUssoSession
+import httpx
+from fastapi_mongo_base.utils import basic
+
+promptly_semaphore = asyncio.Semaphore(8)
 
 
-@try_except_wrapper
-@retry_execution(attempts=3, delay=1)
-async def answer_with_ai(key, **kwargs) -> dict:
-    kwargs["source_language"] = kwargs.get("lang", "Persian")
-    kwargs["target_language"] = kwargs.get("target_language", "English")
-    async with AsyncUssoSession(
-        usso_refresh_url=os.getenv("USSO_REFRESH_URL"),
-        api_key=os.getenv("UFILES_API_KEY"),
-    ) as session:
-        response = await session.post(f'{os.getenv("PROMPTLY_URL")}/{key}', json=kwargs)
-        response.raise_for_status()
-        return response.json()
+class PromptlyClient(httpx.AsyncClient):
 
+    def __init__(self):
+        super().__init__(
+            base_url=os.getenv("PROMPTLY_URL"),
+            headers={
+                "accept": "application/json",
+                "Content-Type": "application/json",
+                "x-api-key": os.getenv("UFILES_API_KEY"),
+            },
+        )
 
-async def translate(text: str) -> str:
-    resp: dict = await answer_with_ai("graphic_translate", text=text)
-    return resp.get("translated_text")
+    @basic.try_except_wrapper
+    @basic.retry_execution(attempts=3, delay=1)
+    async def ai_image(
+        self, image_url: str, key: str, data: dict = {}, **kwargs
+    ) -> dict:
+        async with promptly_semaphore:
+            timeout = kwargs.pop("timeout", 30)
+            r = await self.post(
+                f"/image/{key}",
+                json={**data, "image_url": image_url},
+                timeout=timeout,
+                **kwargs,
+            )
+            r.raise_for_status()
+            return r.json()
+
+    @basic.try_except_wrapper
+    @basic.retry_execution(attempts=3, delay=1)
+    async def ai(self, key: str, data: dict = {}, **kwargs) -> dict:
+        async with promptly_semaphore:
+            timeout = kwargs.pop("timeout", 30)
+            r = await self.post(f"/{key}", json=data, timeout=timeout, **kwargs)
+            r.raise_for_status()
+            return r.json()
+
+    async def ai_search(self, key: str, data: dict = {}, **kwargs) -> dict:
+        async with promptly_semaphore:
+            timeout = kwargs.pop("timeout", 30)
+            return await self.post(f"/search/{key}", data, timeout=timeout, **kwargs)
+
+    async def translate(self, text: str, language: str = "Persian", **kwargs) -> str:
+        timeout = kwargs.pop("timeout", 30)
+        resp: dict = await self.ai(
+            "translate",
+            dict(text=text, target_language=language),
+            timeout=timeout,
+            **kwargs,
+        )
+
+        return resp.get("translated_text")
